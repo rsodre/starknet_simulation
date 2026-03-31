@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { Account, RpcProvider, cairo, ec, hash, num, selector, type SimulateTransactionOverhead, type SimulateTransactionOverheadResponse, type TransactionTrace } from "starknet";
-import { RPC_URL, STRK_TOKEN_ADDRESS } from "./constants.js";
-import { getStorageVarAddress } from "./utils/storage-vars.js";
+import { Account, RpcProvider, cairo } from "starknet";
+import { RPC_URL, STRK_TOKEN_ADDRESS } from "./constants/index.js";
+import { parseSimulationResponses } from "./utils/sim-parser.js";
 
 const main = async () => {
   const accountAddress = process.env.OZ_ACCOUNT_ADDRESS as string;
@@ -32,52 +32,13 @@ const main = async () => {
 
   console.log("Simulating transaction...\n");
 
-  const result = await account.simulateTransaction(
+  const responses = await account.simulateTransaction(
     [{ type: "INVOKE", payload: calls }],
     { skipValidate: true }
   );
 
-  const response = result[0] as SimulateTransactionOverhead;
-  if (!response) throw new Error("No response from simulateTransaction");
+  await parseSimulationResponses(responses, provider, accountAddress);
 
-  const trace: TransactionTrace = response.transaction_trace;
-  console.log(`----------- trace: `, trace);
-  if (!trace) throw new Error("No trace from simulateTransaction");
-
-  // console.log("=== Fee Estimation ===");
-  // console.log("L2 gas:      ", trace.execution_resources.l2_gas.toString());
-  // console.log("L1 gas:      ", trace.execution_resources.l1_gas.toString());
-  // console.log("L1 data gas: ", trace.execution_resources.l1_data_gas.toString());
-
-  const storage_diffs = trace.state_diff?.storage_diffs;
-  console.log(`----------- state_diff: `, trace.state_diff);
-  console.log(`----------- storage_diffs: `, storage_diffs);
-  if (!storage_diffs) throw new Error("No storage_diffs from simulateTransaction");
-
-  console.log("\n=== Storage Diffs ===");
-  for (const diff of storage_diffs) {
-    console.log(`Contract: ${diff.address}`);
-    for (const entry of diff.storage_entries) {
-      const key = entry.key;
-      const value = entry.value;
-      console.log(`  key: ${key}  =>  value: ${value} / ${BigInt(value).toString()}`);
-    }
-  }
-
-  console.log(`ERC20_name...`,
-    selector.getSelector('ERC20_name'), // OK!!!
-    num.toHex(getStorageVarAddress('ERC20_name')),
-  );
-  console.log(`ERC20_symbol...`,
-    selector.getSelector('ERC20_symbol'), // OK!!!
-    num.toHex(getStorageVarAddress('ERC20_symbol')),
-  );
-  console.log(`ERC20_balances...`,
-    selector.getSelectorFromName('ERC20_balances') == selector.getSelector('ERC20_balances'), '\n',
-    selector.getSelector('ERC20_balances'), '\n',
-    num.toHex(ec.starkCurve.poseidonHashMany([BigInt(selector.getSelector('ERC20_balances')), BigInt(recipient)])), '\n',
-    num.toHex(getStorageVarAddress('ERC20_balances', recipient)),
-  );
 };
 
 main().catch(console.error);
