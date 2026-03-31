@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "hello": "tsx src/hello.ts",
+    "simulate": "tsx src/simulate.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
