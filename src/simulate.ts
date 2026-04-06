@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Account, RpcProvider, cairo } from "starknet";
+import { Account, RpcProvider } from "starknet";
 import { parseSimulationResponses } from "./utils/sim-parser.js";
 import * as transactions from "./constants/transactions.js";
 import * as constants from "./constants/index.js";

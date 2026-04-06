@@ -156,10 +156,10 @@ export const consolidateSimulationEvents = async (
       ...event.data,
     ].map(v => BigInt(v));
 
+    //--------------------------
     // ERC20: Transfer
     if (event.eventName == "Transfer" && contractType == 'ERC20') {
       const [from, to, amount] = values;
-      // parse from and to
       // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
       if (amount !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
         transfers.push({
@@ -168,14 +168,30 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: from === BigInt(caller) ? amount : 0n,
           increasing: to === BigInt(caller) ? amount : 0n,
+          allowance: 0n,
+        })
+      }
+    }
+    // ERC20: Approval
+    if (event.eventName == "Approval" && contractType == 'ERC20') {
+      const [owner, spender, amount] = values;
+      // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
+      if (amount !== undefined && owner === BigInt(caller)) {
+        transfers.push({
+          contractAddress: event.contractAddress,
+          contractType,
+          eventName: event.eventName,
+          decreasing: 0n,
+          increasing: 0n,
+          allowance: amount,
         })
       }
     }
 
+    //--------------------------
     // ERC721: Transfer
     if (event.eventName == "Transfer" && contractType == 'ERC721') {
       const [from, to, tokenId] = values;
-      // // parse from and to
       // console.log(`>>> ERC721 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), tokenId, tokenId !== undefined, from === BigInt(caller), to === BigInt(caller));
       if (tokenId !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
         transfers.push({
@@ -184,17 +200,47 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: from === BigInt(caller) ? 1n : 0n,
           increasing: to === BigInt(caller) ? 1n : 0n,
+          allowance: 0n,
         })
       }
     }
+    // ERC721: Approval
+    if (event.eventName == "Approval" && contractType == 'ERC721') {
+      const [owner, approved, tokenId] = values;
+      if (owner === BigInt(caller)) {
+        transfers.push({
+          contractAddress: event.contractAddress,
+          contractType,
+          eventName: event.eventName,
+          decreasing: 0n,
+          increasing: 0n,
+          allowance: 1n,
+        })
+      }
+    }
+    // ERC721: ApprovalForAll
+    if (event.eventName == "ApprovalForAll" && contractType == 'ERC721') {
+      const [owner, operator, approved] = values;
+      if (owner === BigInt(caller)) {
+        transfers.push({
+          contractAddress: event.contractAddress,
+          contractType,
+          eventName: event.eventName,
+          decreasing: 0n,
+          increasing: 0n,
+          allowance: 10000n,
+        })
+      }
+    }
+
   }
   // console.log(`------ transfers: `, transfers);
 
   // consolidate
-  const result = transfers.reduce((acc, transfer) => {
-    const existing = acc.find((r) => r.contractAddress === transfer.contractAddress);
+  const result = transfers.reduce((acc, t) => {
+    const existing = acc.find((r) => r.contractAddress === t.contractAddress);
     if (existing) {
-      const sum = existing.increasing - existing.decreasing + transfer.increasing - transfer.decreasing;
+      const sum = existing.increasing - existing.decreasing + t.increasing - t.decreasing;
       if (sum > 0n) {
         existing.increasing = sum;
         existing.decreasing = 0n;
@@ -202,8 +248,12 @@ export const consolidateSimulationEvents = async (
         existing.increasing = 0n;
         existing.decreasing = -sum;
       }
+      // approval always have the updated allowance, we can overwrite
+      if (t.eventName.startsWith("Approval")) {
+        existing.allowance = t.allowance;
+      }
     } else {
-      acc.push(transfer);
+      acc.push(t);
     }
     return acc;
   }, [] as SimulationResult[]);

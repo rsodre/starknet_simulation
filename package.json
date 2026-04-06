@@ -7,8 +7,8 @@
     "hello": "tsx src/hello.ts",
     "simulate": "tsx src/simulate.ts",
     "simulate_response": "tsx src/simulate_response.ts",
-    "testt": "vitest -t",
-    "test": "vitest run"
+    "test:filter": "vitest --watch=false -t",
+    "test": "vitest run --watch=false"
   },
   "keywords": [],
   "author": "",

@@ -16,10 +16,15 @@ const account = new Account({
 
 const ONE_ETH = 1_000_000_000_000_000_000n;
 
-const getContractDiff = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
+const getBalanceDiff = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
   if (!c) return undefined;
   return c.increasing - c.decreasing;
+}
+
+const getAllowanceDiff = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
+  const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
+  return c?.allowance;
 }
 
 describe('simulate', () => {
@@ -30,7 +35,7 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const strkDiff = getContractDiff(result, constants.STRK_TOKEN_ADDRESS);
+    const strkDiff = getBalanceDiff(result, constants.STRK_TOKEN_ADDRESS);
     expect(strkDiff).toBe(-10n);
   });
 
@@ -41,8 +46,8 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const strkDiff = getContractDiff(result, constants.STRK_TOKEN_ADDRESS);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const strkDiff = getBalanceDiff(result, constants.STRK_TOKEN_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBeLessThan(0n);
     expect(strkDiff).toBeGreaterThan(0n);
   });
@@ -54,8 +59,8 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const attackDiff = getContractDiff(result, constants.ATTACK_POTION_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const attackDiff = getBalanceDiff(result, constants.ATTACK_POTION_ADDRESS);
     expect(lordsDiff).toBeLessThan(0n);
     expect(attackDiff).toBeGreaterThan(0n);
   });
@@ -67,10 +72,10 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const attackDiff = getContractDiff(result, constants.ATTACK_POTION_ADDRESS);
-    const reviveDiff = getContractDiff(result, constants.REVIVE_POTION_ADDRESS);
-    const lifeDiff = getContractDiff(result, constants.EXTRA_LIFE_POTION_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const attackDiff = getBalanceDiff(result, constants.ATTACK_POTION_ADDRESS);
+    const reviveDiff = getBalanceDiff(result, constants.REVIVE_POTION_ADDRESS);
+    const lifeDiff = getBalanceDiff(result, constants.EXTRA_LIFE_POTION_ADDRESS);
     expect(lordsDiff).toBeLessThan(0n);
     expect(attackDiff).toBeGreaterThan(0n);
     expect(reviveDiff).toBeGreaterThan(0n);
@@ -83,14 +88,14 @@ describe('simulate', () => {
       { skipValidate: true }
     );
     const result_single = await parseSimulationResponses(responses_single, provider, accountAddress);
-    const lordsDiffSingle = getContractDiff(result_single, constants.LORDS_TOKEN_ADDRESS) ?? 0n;
+    const lordsDiffSingle = getBalanceDiff(result_single, constants.LORDS_TOKEN_ADDRESS) ?? 0n;
 
     const responses_multiple = await account.simulateTransaction(
       [{ type: "INVOKE", payload: transactions.EKUBO_SWAP_MULTIPLE }],
       { skipValidate: true }
     );
     const result_multiple = await parseSimulationResponses(responses_multiple, provider, accountAddress);
-    const lordsDiffMultiple = getContractDiff(result_multiple, constants.LORDS_TOKEN_ADDRESS) ?? 0n;
+    const lordsDiffMultiple = getBalanceDiff(result_multiple, constants.LORDS_TOKEN_ADDRESS) ?? 0n;
 
     expect(lordsDiffSingle).not.toBe(0n);
     expect(lordsDiffMultiple).not.toBe(0n);
@@ -104,9 +109,9 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const ticketDiff = getContractDiff(result, constants.DUNGEON_TICKET_ADDRESS);
-    const gameDiff = getContractDiff(result, constants.LS_GAME_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const ticketDiff = getBalanceDiff(result, constants.DUNGEON_TICKET_ADDRESS);
+    const gameDiff = getBalanceDiff(result, constants.LS_GAME_ADDRESS);
     expect(lordsDiff).toBeLessThan(-ONE_ETH);
     expect(ticketDiff).toBe(0n);
     expect(gameDiff).toBe(1n);
@@ -119,9 +124,9 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const ticketDiff = getContractDiff(result, constants.DUNGEON_TICKET_ADDRESS);
-    const gameDiff = getContractDiff(result, constants.LS_GAME_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const ticketDiff = getBalanceDiff(result, constants.DUNGEON_TICKET_ADDRESS);
+    const gameDiff = getBalanceDiff(result, constants.LS_GAME_ADDRESS);
     expect(lordsDiff).toBe(undefined);
     expect(ticketDiff).toBe(undefined);
     expect(gameDiff).toBe(undefined);
@@ -134,9 +139,26 @@ describe('simulate', () => {
     );
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
-    const lordsDiff = getContractDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const packDiff = getContractDiff(result, constants.PISTOLS_PACK_ADDRESS);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
+    const allowanceDiff = getAllowanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBe(-50n * ONE_ETH);
     expect(packDiff).toBe(1n);
+    expect(allowanceDiff).toBe(0n);
+  });
+
+  it('PISTOLS_OVER_ALLOWANCE', async () => {
+    const responses = await account.simulateTransaction(
+      [{ type: "INVOKE", payload: transactions.PISTOLS_OVER_ALLOWANCE }],
+      { skipValidate: true }
+    );
+    const result = await parseSimulationResponses(responses, provider, accountAddress);
+    // console.log(`result: `, result);
+    const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
+    const allowanceDiff = getAllowanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
+    expect(lordsDiff).toBe(-50n * ONE_ETH);
+    expect(packDiff).toBe(1n);
+    expect(allowanceDiff).toBeGreaterThan(0n);
   });
 });
