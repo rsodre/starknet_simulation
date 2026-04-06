@@ -7,7 +7,8 @@
     "hello": "tsx src/hello.ts",
     "simulate": "tsx src/simulate.ts",
     "simulate_response": "tsx src/simulate_response.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "testt": "vitest -t",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   }
 }
