@@ -1,6 +1,5 @@
 import {
   getChecksumAddress,
-  num,
   RPC,
   RpcProvider,
   type SimulateTransactionOverhead,
@@ -8,7 +7,7 @@ import {
 import { type SimulationStorageDiff } from "./sim-parser";
 import { getStorageVarAddress } from "./storage-vars";
 
-export const parseStorageDiffs = async (
+export const extractSimulationStorageDiffs = async (
   responses: SimulateTransactionOverhead[],
   provider: RpcProvider,
   caller: string,
@@ -71,45 +70,4 @@ const findStorageName = (key: string, caller: string): string | undefined => {
     return 'ERC721_balances';
   }
   return undefined;
-}
-
-
-export const isErc20Contract = async (provider: RpcProvider, contractAddress: string) => {
-  try {
-    // const key = getStorageVarAddress('ERC20_name');
-    // const name = await provider.getStorageAt(contractAddress, key);
-    // console.log(`ERC20 name:`, num.toHex(key), name, BigInt(name ?? 0) > 0n)
-    // return BigInt(name ?? 0) > 0n;
-
-    const resp = await provider.callContract({
-      contractAddress,
-      entrypoint: 'decimals',
-      calldata: [],
-    });
-    // console.log(`ERC20 decimals:`, resp)
-    return BigInt(resp?.[0] ?? 0) > 0n;
-
-  } catch (error) {
-    return false;
-  }
-}
-
-export const isErc721Contract = async (provider: RpcProvider, contractAddress: string) => {
-  try {
-    const key = getStorageVarAddress('ERC721_name');
-    const name = await provider.getStorageAt(contractAddress, key);
-    return BigInt(name ?? 0) > 0n;
-  } catch (error) {
-    return false;
-  }
-}
-
-export const isErc1155Contract = async (provider: RpcProvider, contractAddress: string) => {
-  try {
-    const key = getStorageVarAddress('ERC1155_uri');
-    const name = await provider.getStorageAt(contractAddress, key);
-    return BigInt(name ?? 0) > 0n;
-  } catch (error) {
-    return false;
-  }
 }
