@@ -34,7 +34,7 @@ export interface SimulationResult {
   eventName: string;
   increasing: bigint;
   decreasing: bigint;
-  allowance: bigint;
+  allowances: Record<string, bigint>;
 }
 
 export const parseSimulationResponses = async (

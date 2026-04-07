@@ -168,7 +168,7 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: from === BigInt(caller) ? amount : 0n,
           increasing: to === BigInt(caller) ? amount : 0n,
-          allowance: 0n,
+          allowances: {},
         })
       }
     }
@@ -183,7 +183,7 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: 0n,
           increasing: 0n,
-          allowance: amount,
+          allowances: { [num.toHex(spender ?? 0)]: amount },
         })
       }
     }
@@ -200,7 +200,7 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: from === BigInt(caller) ? 1n : 0n,
           increasing: to === BigInt(caller) ? 1n : 0n,
-          allowance: 0n,
+          allowances: {},
         })
       }
     }
@@ -214,7 +214,7 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: 0n,
           increasing: 0n,
-          allowance: 1n,
+          allowances: { [num.toHex(approved ?? 0)]: 1n },
         })
       }
     }
@@ -228,7 +228,7 @@ export const consolidateSimulationEvents = async (
           eventName: event.eventName,
           decreasing: 0n,
           increasing: 0n,
-          allowance: 10000n,
+          allowances: { [num.toHex(operator ?? 0)]: approved ? 10000n : 0n },
         })
       }
     }
@@ -237,7 +237,7 @@ export const consolidateSimulationEvents = async (
   // console.log(`------ transfers: `, transfers);
 
   // consolidate
-  const result = transfers.reduce((acc, t) => {
+  let result = transfers.reduce((acc, t) => {
     const existing = acc.find((r) => r.contractAddress === t.contractAddress);
     if (existing) {
       const sum = existing.increasing - existing.decreasing + t.increasing - t.decreasing;
@@ -249,14 +249,26 @@ export const consolidateSimulationEvents = async (
         existing.decreasing = -sum;
       }
       // approval always have the updated allowance, we can overwrite
-      if (t.eventName.startsWith("Approval")) {
-        existing.allowance = t.allowance;
+      const allowance = Object.entries(t.allowances)[0];
+      if (allowance) {
+        existing.allowances[allowance[0]] = allowance[1];
       }
     } else {
       acc.push(t);
     }
     return acc;
   }, [] as SimulationResult[]);
+
+  // cleanup used
+  result =
+    result.map((r) => ({
+      ...r,
+      allowances: Object.fromEntries(Object.entries(r.allowances).filter(([_, v]) => v > 0n)),
+    })).filter((r) => (
+      r.increasing > 0n ||
+      r.decreasing > 0n ||
+      Object.values(r.allowances).length > 0
+    ));
 
   return result;
 }
