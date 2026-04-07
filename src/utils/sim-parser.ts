@@ -2,10 +2,8 @@ import {
   RpcProvider,
   type SimulateTransactionOverhead,
 } from "starknet";
-import {
-  extractSimulationStorageDiffs,
-} from "./sim-storage-diffs";
 import { consolidateSimulationEvents, extractSimulationEvents } from "./sim-events";
+// import { extractSimulationStorageDiffs } from "./sim-storage-diffs";
 
 export interface SimulationStorageDiff {
   contractAddress: string;
@@ -23,6 +21,7 @@ export interface SimulationEvent {
   entryPointSelector: string;
   keys: string[];
   data: string[];
+  values: bigint[];
   // derived
   eventName?: string;
 }
@@ -31,10 +30,8 @@ export type ContractType = 'ERC20' | 'ERC721' | 'ERC1155';
 export interface SimulationResult {
   contractAddress: string;
   contractType: ContractType;
-  eventName: string;
-  increasing: bigint;
-  decreasing: bigint;
-  allowances: Record<string, bigint>;
+  balance: bigint;
+  allowance: bigint;
 }
 
 export const parseSimulationResponses = async (

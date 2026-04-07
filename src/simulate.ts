@@ -47,14 +47,12 @@ const main = async () => {
 
   console.log(`---------- result: `, result);
   result.forEach((r) => {
-    if (r.increasing) {
-      console.log(`+++ ${r.eventName} ${r.contractAddress} +${r.increasing}`);
-    }
-    if (r.decreasing) {
-      console.log(`--- ${r.eventName} ${r.contractAddress} -${r.decreasing}`);
+    if (r.balance > 0) {
+      console.log(`+++ ${r.eventName} ${r.contractAddress} +${r.balance}`);
+    } else if (r.balance < 0) {
+      console.log(`--- ${r.eventName} ${r.contractAddress} ${r.balance}`);
     }
   });
-
 };
 
 main().catch(console.error);
