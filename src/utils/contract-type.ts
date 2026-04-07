@@ -1,6 +1,5 @@
-import {
-  RpcProvider,
-} from "starknet";
+import { RpcProvider } from "starknet";
+import { erc20Metadata } from "@cartridge/presets";
 
 export const isErc20Contract = async (provider: RpcProvider, contractAddress: string) => {
   try {
@@ -8,6 +7,11 @@ export const isErc20Contract = async (provider: RpcProvider, contractAddress: st
     // const name = await provider.getStorageAt(contractAddress, key);
     // console.log(`ERC20 name:`, num.toHex(key), name, BigInt(name ?? 0) > 0n)
     // return BigInt(name ?? 0) > 0n;
+
+    const token = erc20Metadata.find((t) => BigInt(t.l2_token_address) === BigInt(contractAddress));
+    if (token) {
+      return true;
+    }
 
     const resp = await provider.callContract({
       contractAddress,
