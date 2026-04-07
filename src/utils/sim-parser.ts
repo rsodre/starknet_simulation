@@ -42,7 +42,14 @@ export const parseSimulationResponses = async (
   provider: RpcProvider,
   caller: string,
 ) => {
-  const storageDiffs = await extractSimulationStorageDiffs(responses, provider, caller, false);
+  // @ts-ignore
+  if (responses[0]?.transaction_trace?.execute_invocation?.revert_reason) {
+    // @ts-ignore
+    console.error(responses[0]?.transaction_trace?.execute_invocation?.revert_reason);
+    return [];
+  }
+
+  // const storageDiffs = await extractSimulationStorageDiffs(responses, provider, caller, false);
   const events = await extractSimulationEvents(responses, provider, caller);
 
   const result = await consolidateSimulationEvents(events, provider, caller);

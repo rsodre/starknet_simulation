@@ -96,3 +96,21 @@ export const PISTOLS_EXTRA_ALLOWANCE_AFTER = [
   { "contractAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f", "entrypoint": "request_random", "calldata": ["3200116672885330496976366445598937750107499092679469734727006363366688022489", "0", "3353844257235124925573382629261102992028433843221166170064905711558609000773"] },
   { "contractAddress": "0x71333ac75b7d5ba89a2d0c2b67d5b955258a4d46eb42f3428da6137bbbfdfd9", "entrypoint": "purchase_random", "calldata": [] }
 ];
+
+// caller: popsy
+export const PISTOLS_ERC721_TRANSFER = [
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "transfer_from", "calldata": [constants.POPSY_ADDRESS, constants.MATALEONE_ADDRESS, { "low": "0x1725", "high": "0x0" }] },
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "transfer_from", "calldata": [constants.POPSY_ADDRESS, constants.CLI1_ADDRESS, { "low": "0x1726", "high": "0x0" }] },
+];
+export const PISTOLS_ERC721_APPROVE = [
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "approve", "calldata": [constants.MATALEONE_ADDRESS, { "low": "0x1724", "high": "0x0" }] },
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "approve", "calldata": [constants.MATALEONE_ADDRESS, { "low": "0x1725", "high": "0x0" }] },
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "approve", "calldata": [constants.CLI1_ADDRESS, { "low": "0x1726", "high": "0x0" }] },
+];
+export const PISTOLS_ERC721_APPROVE_ALL = [
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [constants.MATALEONE_ADDRESS, 1] },
+];
+export const PISTOLS_ERC721_APPROVE_TRANSFER = [
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "approve", "calldata": [constants.POPSY_ADDRESS, { "low": "0x1725", "high": "0x0" }] },
+  { "contractAddress": constants.PISTOLS_DUELIST_ADDRESS, "entrypoint": "transfer_from", "calldata": [constants.POPSY_ADDRESS, constants.CLI1_ADDRESS, { "low": "0x1726", "high": "0x0" }] },
+];

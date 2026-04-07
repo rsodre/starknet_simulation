@@ -79,12 +79,12 @@ const eventNames = [
   //
   // ERC-20
   // https://github.com/OpenZeppelin/cairo-contracts/blob/release-v1.0.0/packages/token/src/erc20/erc20.cairo
-  "Transfer",
-  "Approval",
+  "Transfer", // ok
+  "Approval", // ok
   //
   // ERC-721
   // https://github.com/OpenZeppelin/cairo-contracts/blob/release-v1.0.0/packages/token/src/erc721/erc721.cairo
-  "Transfer",
+  "Transfer", // ok
   "Approval",
   "ApprovalForAll",
   //
@@ -157,79 +157,92 @@ export const consolidateSimulationEvents = async (
     ].map(v => BigInt(v));
 
     //--------------------------
-    // ERC20: Transfer
-    if (event.eventName == "Transfer" && contractType == 'ERC20') {
-      const [from, to, amount] = values;
-      // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
-      if (amount !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
-        transfers.push({
-          contractAddress: event.contractAddress,
-          contractType,
-          eventName: event.eventName,
-          decreasing: from === BigInt(caller) ? amount : 0n,
-          increasing: to === BigInt(caller) ? amount : 0n,
-          allowances: {},
-        })
-      }
-    }
-    // ERC20: Approval
-    if (event.eventName == "Approval" && contractType == 'ERC20') {
-      const [owner, spender, amount] = values;
-      // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
-      if (amount !== undefined && owner === BigInt(caller)) {
-        transfers.push({
-          contractAddress: event.contractAddress,
-          contractType,
-          eventName: event.eventName,
-          decreasing: 0n,
-          increasing: 0n,
-          allowances: { [num.toHex(spender ?? 0)]: amount },
-        })
+    // ERC20
+    //
+    if (contractType == 'ERC20') {
+      if (event.eventName == "Transfer") {
+        const [from, to, amount] = values;
+        // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
+        if (amount !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+          transfers.push({
+            contractAddress: event.contractAddress,
+            contractType,
+            eventName: event.eventName,
+            decreasing: from === BigInt(caller) ? amount : 0n,
+            increasing: to === BigInt(caller) ? amount : 0n,
+            allowances: {},
+          })
+        }
+      } else if (event.eventName == "Approval") {
+        const [owner, spender, amount] = values;
+        // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
+        if (amount !== undefined && owner === BigInt(caller)) {
+          transfers.push({
+            contractAddress: event.contractAddress,
+            contractType,
+            eventName: event.eventName,
+            decreasing: 0n,
+            increasing: 0n,
+            allowances: { [num.toHex(spender ?? 0)]: amount },
+          })
+        }
       }
     }
 
     //--------------------------
-    // ERC721: Transfer
-    if (event.eventName == "Transfer" && contractType == 'ERC721') {
-      const [from, to, tokenId] = values;
-      // console.log(`>>> ERC721 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), tokenId, tokenId !== undefined, from === BigInt(caller), to === BigInt(caller));
-      if (tokenId !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
-        transfers.push({
-          contractAddress: event.contractAddress,
-          contractType,
-          eventName: event.eventName,
-          decreasing: from === BigInt(caller) ? 1n : 0n,
-          increasing: to === BigInt(caller) ? 1n : 0n,
-          allowances: {},
-        })
+    // ERC721
+    //
+    else if (contractType == 'ERC721') {
+      if (event.eventName == "Transfer") {
+        const [from, to, tokenId] = values;
+        // console.log(`>>> ERC721 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), tokenId, tokenId !== undefined, from === BigInt(caller), to === BigInt(caller));
+        if (tokenId !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+          transfers.push({
+            contractAddress: event.contractAddress,
+            contractType,
+            eventName: event.eventName,
+            decreasing: from === BigInt(caller) ? 1n : 0n,
+            increasing: to === BigInt(caller) ? 1n : 0n,
+            allowances: {},
+          })
+        }
+      } else if (event.eventName == "Approval") {
+        const [owner, approved, tokenId] = values;
+        if (owner === BigInt(caller)) {
+          transfers.push({
+            contractAddress: event.contractAddress,
+            contractType,
+            eventName: event.eventName,
+            decreasing: 0n,
+            increasing: 0n,
+            allowances: { [num.toHex(approved ?? 0)]: 1n },
+          })
+        }
+      } else if (event.eventName == "ApprovalForAll") {
+        const [owner, operator, approved] = values;
+        if (owner === BigInt(caller)) {
+          transfers.push({
+            contractAddress: event.contractAddress,
+            contractType,
+            eventName: event.eventName,
+            decreasing: 0n,
+            increasing: 0n,
+            allowances: { [num.toHex(operator ?? 0)]: approved ? 10000n : 0n },
+          })
+        }
       }
     }
-    // ERC721: Approval
-    if (event.eventName == "Approval" && contractType == 'ERC721') {
-      const [owner, approved, tokenId] = values;
-      if (owner === BigInt(caller)) {
-        transfers.push({
-          contractAddress: event.contractAddress,
-          contractType,
-          eventName: event.eventName,
-          decreasing: 0n,
-          increasing: 0n,
-          allowances: { [num.toHex(approved ?? 0)]: 1n },
-        })
-      }
-    }
-    // ERC721: ApprovalForAll
-    if (event.eventName == "ApprovalForAll" && contractType == 'ERC721') {
-      const [owner, operator, approved] = values;
-      if (owner === BigInt(caller)) {
-        transfers.push({
-          contractAddress: event.contractAddress,
-          contractType,
-          eventName: event.eventName,
-          decreasing: 0n,
-          increasing: 0n,
-          allowances: { [num.toHex(operator ?? 0)]: approved ? 10000n : 0n },
-        })
+
+    //--------------------------
+    // ERC1155
+    //
+    else if (contractType == 'ERC1155') {
+      if (event.eventName == "TransferSingle") {
+        // TODO
+      } else if (event.eventName == "TransferBatch") {
+        // TODO
+      } else if (event.eventName == "ApprovalForAll") {
+        // TODO
       }
     }
 

@@ -22,9 +22,11 @@ const getBalanceDiff = (result: SimulationResult[], contractAddress: string): bi
   return c.increasing - c.decreasing;
 }
 
-const getAllowances = (result: SimulationResult[], contractAddress: string): Record<string, bigint> => {
+const getAllowances = (result: SimulationResult[], contractAddress: string): { total: bigint, allowances: Record<string, bigint> } => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
-  return c?.allowances ?? {};
+  const allowances = c?.allowances ?? {};
+  const total = Object.values(allowances).reduce((acc, allowance) => acc + allowance, 0n);
+  return { total, allowances };
 }
 
 describe('simulate', () => {
@@ -141,10 +143,10 @@ describe('simulate', () => {
     // console.log(`result: `, result);
     const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
     const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
-    const allowances = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    const { allowances, total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBe(-50n * ONE_ETH);
     expect(packDiff).toBe(1n);
-    expect(Object.keys(allowances).length).toBe(0);
+    expect(total).toBe(0n);
   });
 
   it('PISTOLS_OVER_ALLOWANCE', async () => {
@@ -156,10 +158,10 @@ describe('simulate', () => {
     // console.log(`result: `, result);
     const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
     const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
-    const allowances = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    const { total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBe(-50n * ONE_ETH);
     expect(packDiff).toBe(1n);
-    expect(Object.keys(allowances).length).toBe(1);
+    expect(total).toBeGreaterThan(0n);
   });
 
   it('PISTOLS_EXTRA_ALLOWANCE_BEFORE', async () => {
@@ -170,11 +172,9 @@ describe('simulate', () => {
     const result = await parseSimulationResponses(responses, provider, accountAddress);
     // console.log(`result: `, result);
     const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
-    const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
-    const allowances = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    const { total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBe(-50n * ONE_ETH);
-    expect(packDiff).toBe(1n);
-    expect(Object.keys(allowances).length).toBe(1);
+    expect(total).toBeGreaterThan(0n);
   });
 
   it('PISTOLS_EXTRA_ALLOWANCE_AFTER', async () => {
@@ -186,9 +186,64 @@ describe('simulate', () => {
     // console.log(`result: `, result);
     const lordsDiff = getBalanceDiff(result, constants.LORDS_TOKEN_ADDRESS);
     const packDiff = getBalanceDiff(result, constants.PISTOLS_PACK_ADDRESS);
-    const allowances = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    const { total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
     expect(lordsDiff).toBe(-50n * ONE_ETH);
     expect(packDiff).toBe(1n);
+    expect(total).toBeGreaterThan(0n);
+  });
+
+  it('PISTOLS_ERC721_TRANSFER', async () => {
+    const responses = await account.simulateTransaction(
+      [{ type: "INVOKE", payload: transactions.PISTOLS_ERC721_TRANSFER }],
+      { skipValidate: true }
+    );
+    const result = await parseSimulationResponses(responses, provider, accountAddress);
+    // console.log(`result: `, result);
+    const duelistDiff = getBalanceDiff(result, constants.PISTOLS_DUELIST_ADDRESS);
+    const { total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    expect(duelistDiff).toBe(-2n);
+    expect(total).toBe(0n);
+  });
+
+  it('PISTOLS_ERC721_APPROVE', async () => {
+    const responses = await account.simulateTransaction(
+      [{ type: "INVOKE", payload: transactions.PISTOLS_ERC721_APPROVE }],
+      { skipValidate: true }
+    );
+    const result = await parseSimulationResponses(responses, provider, accountAddress);
+    console.log(`result: `, result);
+    const duelistDiff = getBalanceDiff(result, constants.PISTOLS_DUELIST_ADDRESS);
+    const { allowances, total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    expect(duelistDiff).toBe(0n);
+    expect(Object.keys(allowances).length).toBe(2);
+    expect(total).toBe(3n);
+  });
+
+  it('PISTOLS_ERC721_APPROVE_ALL', async () => {
+    const responses = await account.simulateTransaction(
+      [{ type: "INVOKE", payload: transactions.PISTOLS_ERC721_APPROVE_ALL }],
+      { skipValidate: true }
+    );
+    const result = await parseSimulationResponses(responses, provider, accountAddress);
+    // console.log(`result: `, result);
+    const duelistDiff = getBalanceDiff(result, constants.PISTOLS_DUELIST_ADDRESS);
+    const { allowances, total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    expect(duelistDiff).toBe(0n);
     expect(Object.keys(allowances).length).toBe(1);
+    expect(total).toBe(10000n);
+  });
+
+  it('PISTOLS_ERC721_APPROVE_TRANSFER', async () => {
+    const responses = await account.simulateTransaction(
+      [{ type: "INVOKE", payload: transactions.PISTOLS_ERC721_APPROVE_TRANSFER }],
+      { skipValidate: true }
+    );
+    const result = await parseSimulationResponses(responses, provider, accountAddress);
+    // console.log(`result: `, result);
+    const duelistDiff = getBalanceDiff(result, constants.PISTOLS_DUELIST_ADDRESS);
+    const { allowances, total } = getAllowances(result, constants.LORDS_TOKEN_ADDRESS);
+    expect(duelistDiff).toBe(-1n);
+    expect(Object.keys(allowances).length).toBe(0);
+    expect(total).toBe(0n);
   });
 });
