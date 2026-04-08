@@ -28,7 +28,7 @@ const calls = transactions.LS2_PURCHASE_GAME;
 
 const main = async () => {
 
-  const provider = new RpcProvider({ nodeUrl: constants.RPC_URL });
+  const provider = new RpcProvider({ nodeUrl: constants.RPC_URL_MAINNET });
 
   const account = new Account({
     provider,
@@ -40,7 +40,7 @@ const main = async () => {
 
   const responses = await account.simulateTransaction(
     [{ type: "INVOKE", payload: calls }],
-    { skipValidate: true }
+    { skipValidate: true, tip: 1n }
   );
 
   const result = await parseSimulationResponses(responses, provider, accountAddress);
@@ -48,9 +48,9 @@ const main = async () => {
   console.log(`---------- result: `, result);
   result.forEach((r) => {
     if (r.balance > 0) {
-      console.log(`+++ ${r.eventName} ${r.contractAddress} +${r.balance}`);
+      console.log(`+++ ${r.contractType} ${r.contractAddress} +${r.balance}`);
     } else if (r.balance < 0) {
-      console.log(`--- ${r.eventName} ${r.contractAddress} ${r.balance}`);
+      console.log(`--- ${r.contractType} ${r.contractAddress} ${r.balance}`);
     }
   });
 };
