@@ -18,6 +18,7 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
   "tokens-erc20_token",
   "tokens-erc721_token",
   "tokens-erc1155_token",
+  "tokens-router",
 ]
 
 [writers]
@@ -25,6 +26,7 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
   "tokens-erc20_token",
   "tokens-erc721_token",
   "tokens-erc1155_token",
+  "tokens-router",
 ]
 
 [init_call_args]

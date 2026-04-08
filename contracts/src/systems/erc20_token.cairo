@@ -19,6 +19,7 @@ pub trait IERC20Token<TState> {
 
 #[dojo::contract]
 pub mod erc20_token {
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use super::IERC20Token;
 
@@ -58,6 +59,18 @@ pub mod erc20_token {
         for i in 0..recipients.len() {
             self.erc20.mint(*recipients.at(i), 100_000_000_000_000_000_000_u256);
         };
+
+        let world = self.world_default();
+        let router_address = world.dns_address(@"router").expect('router not found');
+        self.erc20.mint(router_address, 100_000_000_000_000_000_000_u256);
+    }
+
+    #[generate_trait]
+    impl WorldDefaultImpl of WorldDefaultTrait {
+        #[inline(always)]
+        fn world_default(self: @ContractState) -> WorldStorage {
+            (self.world(@"tokens"))
+        }
     }
 
     #[abi(embed_v0)]

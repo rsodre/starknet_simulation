@@ -12,8 +12,12 @@ export const RECIPIENT2 = "0x2af9427c5a277474c079a1283c880ee8a6f0f8fbf73ce969c08
 export const ERC20_ADDRESS = "0x07110260306c295a6d9fe81f7acd6d12a02d09e3902e944fe2a62f1c756310c6";
 export const ERC721_ADDRESS = "0x0405c073447f1bfc25b35e987aefc03f8f64a45e1993a0362e2a5a195111f61d";
 export const ERC1155_ADDRESS = "0x07f6f20d1993a0caeb38e753032fe6443aee2ff692abf3cb4552fdde1d66fa8a";
+export const STRK_ADDRESS = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
+export const ROUTER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export const ONE_ETH = 1_000_000_000_000_000_000n;
+
+// erc-20
 
 export const erc20_transfers: Call[] = [
   { "contractAddress": ERC20_ADDRESS, "entrypoint": "transfer", "calldata": [RECIPIENT1, ONE_ETH, "0x0"] },
@@ -26,6 +30,28 @@ export const erc20_approvals: Call[] = [
   { "contractAddress": ERC20_ADDRESS, "entrypoint": "approve", "calldata": [RECIPIENT1, 10n * ONE_ETH, "0x0"] },
   { "contractAddress": ERC20_ADDRESS, "entrypoint": "approve", "calldata": [RECIPIENT2, 9n * ONE_ETH, "0x0"] },
 ];
+
+export const erc20_swap_transfer: Call[] = [
+  { "contractAddress": ERC20_ADDRESS, "entrypoint": "transfer", "calldata": [ROUTER_ADDRESS, ONE_ETH, "0x0"] },
+  { "contractAddress": ROUTER_ADDRESS, "entrypoint": "swap_transfer", "calldata": [ONE_ETH, "0x0"] },
+];
+
+export const erc20_swap_transfer_over: Call[] = [
+  { "contractAddress": ERC20_ADDRESS, "entrypoint": "transfer", "calldata": [ROUTER_ADDRESS, 3n * ONE_ETH, "0x0"] },
+  { "contractAddress": ROUTER_ADDRESS, "entrypoint": "swap_transfer", "calldata": [ONE_ETH, "0x0"] },
+];
+
+export const erc20_swap_approve: Call[] = [
+  { "contractAddress": ERC20_ADDRESS, "entrypoint": "approve", "calldata": [ROUTER_ADDRESS, ONE_ETH, "0x0"] },
+  { "contractAddress": ROUTER_ADDRESS, "entrypoint": "swap_approve", "calldata": [ONE_ETH, "0x0"] },
+];
+
+export const erc20_swap_approve_over: Call[] = [
+  { "contractAddress": ERC20_ADDRESS, "entrypoint": "approve", "calldata": [ROUTER_ADDRESS, 3n * ONE_ETH, "0x0"] },
+  { "contractAddress": ROUTER_ADDRESS, "entrypoint": "swap_approve", "calldata": [ONE_ETH, "0x0"] },
+];
+
+// erc-721
 
 export const erc721_transfers: Call[] = [
   { "contractAddress": ERC721_ADDRESS, "entrypoint": "transfer_from", "calldata": [CALLER, RECIPIENT1, "0x1", "0x0"] },
