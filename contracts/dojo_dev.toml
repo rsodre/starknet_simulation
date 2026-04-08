@@ -13,29 +13,31 @@ account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5c
 private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 # world_address = ""
 
-# ── Contract init calldata ─────────────────────────────────────────────────
-# Fill in your deployment values here before running `sozo migrate`.
-#
-# [contracts."tokens-erc20_token"]
-# init_calldata = [
-#   "$account_address",   # owner
-#   "str:MyToken",        # name  (short string encoding)
-#   "str:MTK",            # symbol
-#   "0x0",                # initial_supply (low u128)
-#   "0x0",                # initial_supply (high u128)
-#   "$account_address",   # recipient (ignored when supply = 0)
-# ]
-#
-# [contracts."tokens-erc721_token"]
-# init_calldata = [
-#   "$account_address",            # owner
-#   "str:MyNFT",                   # name
-#   "str:MNFT",                    # symbol
-#   "str:https://example.com/",    # base_uri
-# ]
-#
-# [contracts."tokens-erc1155_token"]
-# init_calldata = [
-#   "$account_address",                        # owner
-#   "str:https://example.com/{id}.json",       # base_uri
-# ]
+[owners]
+"tokens" = [
+  "tokens-erc20_token",
+  "tokens-erc721_token",
+  "tokens-erc1155_token",
+]
+
+[writers]
+"tokens" = [
+  "tokens-erc20_token",
+  "tokens-erc721_token",
+  "tokens-erc1155_token",
+]
+
+[init_call_args]
+"tokens-erc20_token" = [
+  "arr:0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec", # katana recipients
+]
+
+"tokens-erc721_token" = [
+  "arr:0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec,0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec,0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec", # katana recipients
+]
+
+"tokens-erc1155_token" = [
+  "arr:0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec,0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec", # katana recipients
+  "arr:1,2", # tokenids
+  "arr:3,1", # values (amounts)
+]

@@ -1,70 +1,27 @@
 
-/// Full interface for the ERC-1155 token contract.
-/// Exposes all ERC1155Component (balance queries, transfers, mint, burn),
-/// ERC1155MetadataURIComponent (uri), and
-/// SRC5Component (supports_interface) functions.
 #[starknet::interface]
 pub trait IERC1155Token<TState> {
     // ── IERC1155 ─────────────────────────────────────────────────────────────
     fn balance_of(self: @TState, account: starknet::ContractAddress, token_id: u256) -> u256;
-    fn balance_of_batch(
-        self: @TState, accounts: Span<starknet::ContractAddress>, token_ids: Span<u256>,
-    ) -> Span<u256>;
-    fn is_approved_for_all(
-        self: @TState, owner: starknet::ContractAddress, operator: starknet::ContractAddress,
-    ) -> bool;
+    fn balance_of_batch(self: @TState, accounts: Span<starknet::ContractAddress>, token_ids: Span<u256>) -> Span<u256>;
+    fn is_approved_for_all(self: @TState, owner: starknet::ContractAddress, operator: starknet::ContractAddress) -> bool;
     fn set_approval_for_all(ref self: TState, operator: starknet::ContractAddress, approved: bool);
-    fn safe_transfer_from(
-        ref self: TState,
-        from: starknet::ContractAddress,
-        to: starknet::ContractAddress,
-        token_id: u256,
-        value: u256,
-        data: Span<felt252>,
-    );
-    fn safe_batch_transfer_from(
-        ref self: TState,
-        from: starknet::ContractAddress,
-        to: starknet::ContractAddress,
-        token_ids: Span<u256>,
-        values: Span<u256>,
-        data: Span<felt252>,
-    );
+    fn transfer_from(ref self: TState, from: starknet::ContractAddress, to: starknet::ContractAddress, token_id: u256, value: u256);
+    fn batch_transfer_from(ref self: TState, from: starknet::ContractAddress, to: starknet::ContractAddress, token_ids: Span<u256>, values: Span<u256>);
     // ── IERC1155MetadataURI ──────────────────────────────────────────────────
     fn uri(self: @TState, token_id: u256) -> ByteArray;
     // ── ISRC5 ────────────────────────────────────────────────────────────────
     fn supports_interface(self: @TState, interface_id: felt252) -> bool;
     // ── Mint / Burn ──────────────────────────────────────────────────────────
-    fn mint(
-        ref self: TState,
-        to: starknet::ContractAddress,
-        token_id: u256,
-        value: u256,
-        data: Span<felt252>,
-    );
-    fn mint_batch(
-        ref self: TState,
-        to: starknet::ContractAddress,
-        token_ids: Span<u256>,
-        values: Span<u256>,
-        data: Span<felt252>,
-    );
+    fn mint(ref self: TState, to: starknet::ContractAddress, token_id: u256, value: u256);
+    fn mint_batch(ref self: TState, to: starknet::ContractAddress, token_ids: Span<u256>, values: Span<u256>);
     fn burn(ref self: TState, from: starknet::ContractAddress, token_id: u256, value: u256);
-    fn burn_batch(
-        ref self: TState, from: starknet::ContractAddress, token_ids: Span<u256>, values: Span<u256>,
-    );
+    fn burn_batch(ref self: TState, from: starknet::ContractAddress, token_ids: Span<u256>, values: Span<u256>);
 }
 
-/// ERC-1155 token Dojo contract.
-///
-/// Embeds OpenZeppelin ERC1155Component (balance, transfer, mint, burn) and
-/// SRC5Component (interface detection).
-///
-/// Initialization: call `dojo_init` via `sozo migrate` with:
-///   - owner    : starknet::ContractAddress — initial owner
-///   - base_uri : ByteArray       — base metadata URI ({id} substitution handled by clients)
 #[dojo::contract]
 pub mod erc1155_token {
+    use core::num::traits::Zero;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc1155::{ERC1155Component, ERC1155HooksEmptyImpl};
     use super::IERC1155Token;
@@ -96,17 +53,26 @@ pub mod erc1155_token {
         ERC1155Event: ERC1155Component::Event,
     }
 
+    fn BASE_URI() -> ByteArray {"https://mock.uri/{id}"}
+
     /// Called once by the Dojo world during `sozo migrate`.
     fn dojo_init(
         ref self: ContractState,
         recipients: Span<starknet::ContractAddress>,
         token_ids: Span<u128>,
+        values: Span<u128>,
     ) {
         assert!(recipients.len() == token_ids.len(), "length_mismatch");
+        assert!(recipients.len() == values.len(), "length_mismatch");
 
-        let base_uri: ByteArray = "https://mock.uri/{id}";
+        self.erc1155.initializer(BASE_URI());
 
-        self.erc1155.initializer(base_uri);
+        for i in 0..recipients.len() {
+            let recipient = *recipients.at(i);
+            let token_id: u256 = (*token_ids.at(i)).into();
+            let value: u256 = (*values.at(i)).into();
+            self.mint(recipient, token_id, value);
+        };
     }
 
     #[abi(embed_v0)]
@@ -132,32 +98,33 @@ pub mod erc1155_token {
         fn set_approval_for_all(
             ref self: ContractState, operator: starknet::ContractAddress, approved: bool,
         ) {
-            // public: caller sets their own operator approvals
             self.erc1155.set_approval_for_all(operator, approved)
         }
 
-        fn safe_transfer_from(
+        fn transfer_from(
             ref self: ContractState,
             from: starknet::ContractAddress,
             to: starknet::ContractAddress,
             token_id: u256,
             value: u256,
-            data: Span<felt252>,
         ) {
-            // public: ERC1155Component checks caller is owner or approved operator
-            self.erc1155.safe_transfer_from(from, to, token_id, value, data)
+            self.batch_transfer_from(from, to, [token_id].span(), [value].span());
         }
 
-        fn safe_batch_transfer_from(
+        fn batch_transfer_from(
             ref self: ContractState,
             from: starknet::ContractAddress,
             to: starknet::ContractAddress,
             token_ids: Span<u256>,
             values: Span<u256>,
-            data: Span<felt252>,
         ) {
-            // public: ERC1155Component checks caller is owner or approved operator
-            self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data)
+            assert(from.is_non_zero(), ERC1155Component::Errors::INVALID_SENDER);
+            assert(to.is_non_zero(), ERC1155Component::Errors::INVALID_RECEIVER);
+            let operator = starknet::get_caller_address();
+            if from != operator {
+                assert(Self::is_approved_for_all(@self, from, operator), ERC1155Component::Errors::UNAUTHORIZED);
+            }
+            self.erc1155.update(from, to, token_ids, values);
         }
 
         // ── IERC1155MetadataURI ──────────────────────────────────────────────
@@ -179,9 +146,9 @@ pub mod erc1155_token {
             to: starknet::ContractAddress,
             token_id: u256,
             value: u256,
-            data: Span<felt252>,
         ) {
-            self.erc1155.mint_with_acceptance_check(to, token_id, value, data);
+            // self.erc1155.mint_with_acceptance_check(to, token_id, value, [].span());
+            self.mint_batch(to, [token_id].span(), [value].span());
         }
 
         fn mint_batch(
@@ -189,9 +156,10 @@ pub mod erc1155_token {
             to: starknet::ContractAddress,
             token_ids: Span<u256>,
             values: Span<u256>,
-            data: Span<felt252>,
         ) {
-            self.erc1155.batch_mint_with_acceptance_check(to, token_ids, values, data);
+            // self.erc1155.batch_mint_with_acceptance_check(to, token_ids, values, [].span());
+            assert(to.is_non_zero(), ERC1155Component::Errors::INVALID_RECEIVER);
+            self.erc1155.update(Zero::zero(), to, token_ids, values);
         }
 
         fn burn(ref self: ContractState, from: starknet::ContractAddress, token_id: u256, value: u256) {

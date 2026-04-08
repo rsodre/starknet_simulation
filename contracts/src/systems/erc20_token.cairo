@@ -1,7 +1,4 @@
 
-/// Full interface for the ERC-20 token contract.
-/// Exposes all ERC20Component (transfer, approve, mint, burn) and
-/// ERC20MetadataComponent (name, symbol, decimals) functions.
 #[starknet::interface]
 pub trait IERC20Token<TState> {
     // ── IERC20 ─────────────────────────────────────────────────────────────
@@ -9,9 +6,7 @@ pub trait IERC20Token<TState> {
     fn balance_of(self: @TState, account: starknet::ContractAddress) -> u256;
     fn allowance(self: @TState, owner: starknet::ContractAddress, spender: starknet::ContractAddress) -> u256;
     fn transfer(ref self: TState, recipient: starknet::ContractAddress, amount: u256) -> bool;
-    fn transfer_from(
-        ref self: TState, sender: starknet::ContractAddress, recipient: starknet::ContractAddress, amount: u256,
-    ) -> bool;
+    fn transfer_from(ref self: TState, sender: starknet::ContractAddress, recipient: starknet::ContractAddress, amount: u256) -> bool;
     fn approve(ref self: TState, spender: starknet::ContractAddress, amount: u256) -> bool;
     // ── IERC20Metadata ──────────────────────────────────────────────────────
     fn name(self: @TState) -> ByteArray;
@@ -22,16 +17,6 @@ pub trait IERC20Token<TState> {
     fn burn(ref self: TState, account: starknet::ContractAddress, amount: u256);
 }
 
-/// ERC-20 token Dojo contract.
-///
-/// Embeds OpenZeppelin ERC20Component (transfer, approve, allowance).
-///
-/// Initialization: call `dojo_init` via `sozo migrate` with:
-///   - owner          : starknet::ContractAddress  — initial owner
-///   - name           : ByteArray        — token name
-///   - symbol         : ByteArray        — token symbol
-///   - initial_supply : u256             — tokens to pre-mint (0 = skip)
-///   - recipient      : starknet::ContractAddress  — pre-mint recipient (ignored when supply = 0)
 #[dojo::contract]
 pub mod erc20_token {
     use openzeppelin_token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
@@ -63,16 +48,16 @@ pub mod erc20_token {
         ERC20Event: ERC20Component::Event,
     }
 
+    fn NAME() -> ByteArray {"MockToken"}
+    fn SYMBOL() -> ByteArray {"MTK"}
+
     /// Called once by the Dojo world during `sozo migrate`.
     fn dojo_init(ref self: ContractState, recipients: Span<starknet::ContractAddress>) {
-        let name: ByteArray = "MockToken";
-        let symbol: ByteArray = "MTK";
+        self.erc20.initializer(NAME(), SYMBOL());
 
-        self.erc20.initializer(name, symbol);
-        if initial_supply > 0 {
-            assert!(!recipient.is_zero(), "recipient_zero");
-            self.erc20.mint(recipient, initial_supply);
-        }
+        for i in 0..recipients.len() {
+            self.erc20.mint(*recipients.at(i), 100_000_000_000_000_000_000_u256);
+        };
     }
 
     #[abi(embed_v0)]
@@ -94,7 +79,6 @@ pub mod erc20_token {
         }
 
         fn transfer(ref self: ContractState, recipient: starknet::ContractAddress, amount: u256) -> bool {
-            // public: standard ERC20 — caller initiates transfer of own tokens
             self.erc20.transfer(recipient, amount)
         }
 
@@ -104,12 +88,10 @@ pub mod erc20_token {
             recipient: starknet::ContractAddress,
             amount: u256,
         ) -> bool {
-            // public: protected by allowance check inside ERC20Component
             self.erc20.transfer_from(sender, recipient, amount)
         }
 
         fn approve(ref self: ContractState, spender: starknet::ContractAddress, amount: u256) -> bool {
-            // public: caller sets their own allowance
             self.erc20.approve(spender, amount)
         }
 
