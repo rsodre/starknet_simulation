@@ -6,6 +6,7 @@ import {
   KATANA_RPC_URL,
   ERC20_ADDRESS,
   ERC721_ADDRESS,
+  ERC1155_ADDRESS,
   STRK_ADDRESS,
   erc20_transfers,
   erc20_approvals,
@@ -21,6 +22,10 @@ import {
   erc721_purchase_transferred,
   erc721_purchase_approved,
   erc721_purchase_approved_over,
+  erc1155_transfers,
+  erc1155_batch_transfers,
+  erc1155_approve_all,
+  erc1155_approve_all_multi,
   ONE_ETH,
 } from "./katana_transactions.js";
 
@@ -210,5 +215,47 @@ describe('simulate katana erc721 purchase', () => {
     expect(strkDiff).toBe(-ONE_ETH);
     expect(erc721Diff).toBe(1n);
     expect(strkAllowance).toBe(4n * ONE_ETH);
+  });
+});
+
+describe('simulate katana erc1155', () => {
+  it('erc1155_single_transfer', async () => {
+    const result = await simulate(erc1155_transfers.slice(0, 1));
+    const diff = getBalanceDiff(result, ERC1155_ADDRESS);
+    expect(diff).toBe(-2n);
+  });
+
+  it('erc1155_multi_transfer', async () => {
+    const result = await simulate(erc1155_transfers);
+    const diff = getBalanceDiff(result, ERC1155_ADDRESS);
+    expect(diff).toBe(-5n);
+  });
+
+  it('erc1155_single_batch_transfer', async () => {
+    const result = await simulate(erc1155_batch_transfers.slice(0, 1));
+    const diff = getBalanceDiff(result, ERC1155_ADDRESS);
+    // 2 of token_id=1 + 1 of token_id=2 = 3 total sent
+    expect(diff).toBe(-3n);
+  });
+
+  it('erc1155_multi_batch_transfer', async () => {
+    const result = await simulate(erc1155_batch_transfers);
+    const diff = getBalanceDiff(result, ERC1155_ADDRESS);
+    // 2 of token_id=1 + 1 of token_id=2 = 3 total sent
+    expect(diff).toBe(-3n);
+  });
+
+  it('erc1155_approve_all', async () => {
+    const result = await simulate(erc1155_approve_all);
+    const allowance = getAllowances(result, ERC1155_ADDRESS);
+    // 1 operator approved → allowance count = 1
+    expect(allowance).toBe(1n);
+  });
+
+  it('erc1155_approve_all_multi', async () => {
+    const result = await simulate(erc1155_approve_all_multi);
+    const allowance = getAllowances(result, ERC1155_ADDRESS);
+    // 2 operators approved → allowance count = 2
+    expect(allowance).toBe(2n);
   });
 });

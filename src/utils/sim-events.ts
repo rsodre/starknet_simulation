@@ -2,6 +2,7 @@ import {
   getChecksumAddress,
   hash,
   num,
+  uint256,
   RPC,
   RpcProvider,
   type SimulateTransactionOverhead,
@@ -171,18 +172,20 @@ export const consolidateSimulationEvents = async (
     }
 
     if (event.eventName == "Transfer") {
-      const [from, to, amount] = event.values;
+      const [from, to, amount_low, amount_high] = event.values;
+      const amount = uint256.uint256ToBN({ low: amount_low ?? 0, high: amount_high ?? 0 });
       // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
-      if (amount !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+      if (from === BigInt(caller) || to === BigInt(caller)) {
         erc20Event.balance += 
           from === BigInt(caller) ? -amount
           : to === BigInt(caller) ? amount
           : 0n;
       }
     } else if (event.eventName == "Approval") {
-      const [owner, spender, amount] = event.values;
+      const [owner, spender, amount_low, amount_high] = event.values;
+      const amount = uint256.uint256ToBN({ low: amount_low ?? 0, high: amount_high ?? 0 });
       // console.log(`>>> ERC20 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), amount, amount !== undefined, from === BigInt(caller), to === BigInt(caller))
-      if (amount !== undefined && owner === BigInt(caller)) {
+      if (owner === BigInt(caller)) {
         // approval always have the updated allowance, we must overwrite it
         erc20Event.allowances[num.toHex(spender ?? 0)] = amount;
       }
@@ -214,9 +217,10 @@ export const consolidateSimulationEvents = async (
     }
 
     if (event.eventName == "Transfer") {
-      const [from, to, tokenId] = event.values;
+      const [from, to, id_low, id_high] = event.values;
+      const tokenId = uint256.uint256ToBN({ low: id_low ?? 0, high: id_high ?? 0 });
       // console.log(`>>> ERC721 Transfer: `, num.toHex(from ?? 0), num.toHex(to ?? 0), tokenId, tokenId !== undefined, from === BigInt(caller), to === BigInt(caller));
-      if (tokenId !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+      if (from === BigInt(caller) || to === BigInt(caller)) {
         erc721Event.balance +=
           from === BigInt(caller) ? -1n
             : to === BigInt(caller) ? 1n
@@ -225,8 +229,9 @@ export const consolidateSimulationEvents = async (
         erc721Event.approved = erc721Event.approved.filter((t) => t !== tokenId);
       }
     } else if (event.eventName == "Approval") {
-      const [owner, approved, tokenId] = event.values;
-      if (owner === BigInt(caller) && approved !== undefined && tokenId !== undefined) {
+      const [owner, approved, id_low, id_high] = event.values;
+      const tokenId = uint256.uint256ToBN({ low: id_low ?? 0, high: id_high ?? 0 });
+      if (owner === BigInt(caller) && approved !== undefined) {
         if (!erc721Event.approved.includes(tokenId)) {
           erc721Event.approved.push(tokenId);
         }
@@ -269,11 +274,67 @@ export const consolidateSimulationEvents = async (
     }
 
     if (event.eventName == "TransferSingle") {
-      // TODO
+      const [_operator, from, to, id_low, id_high, value_low, value_high] = event.values;
+      const id = uint256.uint256ToBN({ low: id_low ?? 0, high: id_high ?? 0 });
+      const value = uint256.uint256ToBN({ low: value_low ?? 0, high: value_high ?? 0 });
+      if (value !== undefined && id !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+        erc1155Event.balance += from === BigInt(caller) ? -value : value;
+        if (from === BigInt(caller)) {
+          let count = value;
+          erc1155Event.approved = erc1155Event.approved.filter((t) => {
+            if (count > 0n && t === id) { count--; return false; }
+            return true;
+          });
+        } else {
+          for (let i = 0n; i < value; i++) {
+            erc1155Event.approved.push(id);
+          }
+        }
+      }
     } else if (event.eventName == "TransferBatch") {
-      // TODO
+      // values: [operator, from, to, ids_len, id0_low, id0_high, ..., values_len, val0_low, val0_high, ...]
+      // ids and values are u256 (2 felts each)
+      const [_operator, from, to, idsLen, ...rest] = event.values;
+      if (idsLen !== undefined && (from === BigInt(caller) || to === BigInt(caller))) {
+        const n = Number(idsLen);
+        const ids: bigint[] = [];
+        for (let i = 0; i < n; i++) {
+          ids.push(uint256.uint256ToBN({ low: rest[i * 2] ?? 0n, high: rest[i * 2 + 1] ?? 0n }));
+        }
+        const valuesOffset = n * 2; // index of values_len
+        const valuesLen = Number(rest[valuesOffset] ?? 0n);
+        const amounts: bigint[] = [];
+        for (let i = 0; i < valuesLen; i++) {
+          amounts.push(uint256.uint256ToBN({ low: rest[valuesOffset + 1 + i * 2] ?? 0n, high: rest[valuesOffset + 2 + i * 2] ?? 0n }));
+        }
+        for (let i = 0; i < ids.length; i++) {
+          const id = ids[i]!;
+          const amount = amounts[i] ?? 0n;
+          erc1155Event.balance += from === BigInt(caller) ? -amount : amount;
+          if (from === BigInt(caller)) {
+            let count = amount;
+            erc1155Event.approved = erc1155Event.approved.filter((t) => {
+              if (count > 0n && t === id) { count--; return false; }
+              return true;
+            });
+          } else {
+            for (let j = 0n; j < amount; j++) {
+              erc1155Event.approved.push(id);
+            }
+          }
+        }
+      }
     } else if (event.eventName == "ApprovalForAll") {
-      // TODO
+      // values: [owner, operator, approved]
+      const [owner, operator, approved] = event.values;
+      if (owner === BigInt(caller) && operator !== undefined && approved !== undefined) {
+        const op = num.toHex(operator);
+        if (!approved) {
+          erc1155Event.operators = erc1155Event.operators.filter((o) => o !== op);
+        } else if (!erc1155Event.operators.includes(op)) {
+          erc1155Event.operators.push(op);
+        }
+      }
     }
   }
 

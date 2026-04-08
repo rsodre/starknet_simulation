@@ -56,9 +56,7 @@ export const isErc1155Contract = async (provider: RpcProvider, contractAddress: 
       entrypoint: 'supports_interface',
       calldata: [IERC1155_ID],
     });
-    console.log(`ERC1155 supportsInterface:`, resp)
     return BigInt(resp?.[0] ?? 0) > 0n;
-
   } catch (error) {
     // console.log(`isErc1155Contract() ERROR:`, error)
     return false;

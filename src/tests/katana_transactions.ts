@@ -99,3 +99,32 @@ export const erc721_purchase_approved_over: Call[] = [
   { "contractAddress": ROUTER_ADDRESS, "entrypoint": "purchase_erc721_approved", "calldata": [ONE_ETH, "0x0"] },
 ];
 
+// erc-1155
+// CALLER holds: token_id=1 (qty=3), token_id=2 (qty=1)
+
+// multi transfer_from: send 1 of token_id=1 + 1 of token_id=2
+export const erc1155_transfers: Call[] = [
+  // 2 x id 1
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "transfer_from", "calldata": [CALLER, RECIPIENT1, "0x1", "0x0", "0x2", "0x0"] },
+  // 1 x id 1
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "transfer_from", "calldata": [CALLER, RECIPIENT2, "0x1", "0x0", "0x1", "0x0"] },
+  // 2 x id 2
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "transfer_from", "calldata": [CALLER, RECIPIENT1, "0x2", "0x0", "0x2", "0x0"] },
+];
+
+export const erc1155_batch_transfers: Call[] = [
+  // batch_transfer_from: send 2 of token_id=1 and 1 of token_id=2 in one call
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "batch_transfer_from", "calldata": [CALLER, RECIPIENT1, "0x2", "0x1", "0x0", "0x2", "0x0", "0x2", "0x2", "0x0", "0x1", "0x0"] },
+];
+
+// set_approval_for_all: approve one operator
+export const erc1155_approve_all: Call[] = [
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x1"] },
+];
+
+// set_approval_for_all: approve two operators
+export const erc1155_approve_all_multi: Call[] = [
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x1"] },
+  { "contractAddress": ERC1155_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [RECIPIENT1, "0x1"] },
+];
+
