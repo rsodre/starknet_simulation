@@ -60,6 +60,11 @@
       "source": "dojoengine/book",
       "sourceType": "github",
       "computedHash": "bb3ebcbd4622e5632a5406cde84a2e5235a1a2dea9614299febfd14a6c21cddf"
+    },
+    "starknet-agentic-skills": {
+      "source": "keep-starknet-strange/starknet-agentic",
+      "sourceType": "github",
+      "computedHash": "99c4a62de5f18b73fb9f78d81f616fe5f628d87351fe353136c5044f89990f53"
     }
   }
 }
