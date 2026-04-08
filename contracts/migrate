@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e # enable exit on error
+
+export PROFILE="dev"
+
+echo "------------------------------------------------------------------------------"
+sozo --version
+echo "------------------------------------------------------------------------------"
+echo ">>> Cleaning..."
+ sozo -P $PROFILE clean
+echo ">>> Building..."
+sozo -P $PROFILE build
+echo "👍"
+
+echo "------------------------------------------------------------------------------"
+echo ">>> Inspect migrations..."
+sozo -P $PROFILE inspect
+
+echo "------------------------------------------------------------------------------"
+echo ">>> Do migrations..."
+sozo -P $PROFILE migrate
+echo "👍"
+
+echo "--- DONE! 👍"
