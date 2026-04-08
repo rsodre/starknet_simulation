@@ -32,6 +32,7 @@ export interface SimulationResult {
   contractType: ContractType;
   balance: bigint;
   allowance: bigint;
+  approvedAll: boolean;
 }
 
 export const parseSimulationResponses = async (

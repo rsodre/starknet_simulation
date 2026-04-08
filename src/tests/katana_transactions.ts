@@ -79,6 +79,14 @@ export const erc721_approvals: Call[] = [
 
 export const erc721_approve_all: Call[] = [
   { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x1"] },
+  { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x0"] },
+];
+
+export const erc721_approve_all_multi: Call[] = [
+  { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x1"] },
+  { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [RECIPIENT1, "0x1"] },
+  { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [OPERATOR, "0x0"] },
+  { "contractAddress": ERC721_ADDRESS, "entrypoint": "set_approval_for_all", "calldata": [RECIPIENT1, "0x0"] },
 ];
 
 // send STRK, receive ERC721

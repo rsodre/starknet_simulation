@@ -32,7 +32,7 @@ const getBalanceDiff = (result: SimulationResult[], contractAddress: string): bi
 const getAllowances = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
   if (!c) return undefined;
-  return c.allowance;
+  return c.allowance + (c.approvedAll ? 100n : 0n);
 }
 
 describe('simulate', () => {
@@ -176,7 +176,7 @@ describe('simulate', () => {
     const duelistDiff = getBalanceDiff(result, constants.PISTOLS_DUELIST_ADDRESS);
     const allowance = getAllowances(result, constants.PISTOLS_DUELIST_ADDRESS);
     expect(duelistDiff).toBe(0n);
-    expect(allowance).toBe(1n);
+    expect(allowance).toBe(100n);
   });
 
   // it('PISTOLS_ERC721_APPROVE_TRANSFER', async () => {

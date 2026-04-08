@@ -199,7 +199,7 @@ export const consolidateSimulationEvents = async (
     contractAddress: string;
     balance: bigint;
     approved: bigint[]; // tokenIds
-    operators: string[]; // accounts
+    operators: string[]; // accounts with ApprovalForAll
   }[] = [];
   for (const event of events) {
     if (contracts[event.contractAddress] !== 'ERC721') continue;
@@ -256,7 +256,7 @@ export const consolidateSimulationEvents = async (
     contractAddress: string;
     balance: bigint;
     approved: bigint[]; // tokenIds
-    operators: string[]; // accounts
+    operators: string[]; // accounts with ApprovalForAll
   }[] = [];
   for (const event of events) {
     if (contracts[event.contractAddress] !== 'ERC1155') continue;
@@ -351,24 +351,27 @@ export const consolidateSimulationEvents = async (
     contractType: 'ERC20',
     balance: e.balance,
     allowance: Object.values(e.allowances).reduce((acc, v) => acc + v, 0n),
+    approvedAll: false,
   })));
 
   result = result.concat(erc721Events.map((e) => ({
     contractAddress: e.contractAddress,
     contractType: 'ERC721',
     balance: e.balance,
-    allowance: BigInt(e.approved.length) + BigInt(e.operators.length),
+    allowance: BigInt(e.approved.length),
+    approvedAll: e.operators.length > 0,
   })));
 
   result = result.concat(erc1155Events.map((e) => ({
     contractAddress: e.contractAddress,
     contractType: 'ERC1155',
     balance: e.balance,
-    allowance: BigInt(e.approved.length) + BigInt(e.operators.length),
+    allowance: BigInt(e.approved.length),
+    approvedAll: e.operators.length > 0,
   })));
 
   // cleanup used
-  result = result.filter((r) => (r.balance != 0n || r.allowance != 0n));
+  result = result.filter((r) => (r.balance != 0n || r.allowance != 0n || r.approvedAll));
 
   // console.log(`------- result:`, result.length, result);
 

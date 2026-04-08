@@ -19,6 +19,7 @@ import {
   erc721_transfers,
   erc721_approvals,
   erc721_approve_all,
+  erc721_approve_all_multi,
   erc721_purchase_transferred,
   erc721_purchase_approved,
   erc721_purchase_approved_over,
@@ -54,7 +55,7 @@ const getBalanceDiff = (result: SimulationResult[], contractAddress: string): bi
 const getAllowances = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
   if (!c) return undefined;
-  return c.allowance;
+  return c.allowance + (c.approvedAll ? 100n : 0n);
 }
 
 describe('simulate katana erc20', () => {
@@ -178,10 +179,38 @@ describe('simulate katana erc721', () => {
   });
 
   it('erc721_approve_all', async () => {
+    const result = await simulate(erc721_approve_all.slice(0, 1));
+    const allowance = getAllowances(result, ERC721_ADDRESS);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(100n);
+  });
+
+  it('erc721_approve_all_revoke', async () => {
     const result = await simulate(erc721_approve_all);
     const allowance = getAllowances(result, ERC721_ADDRESS);
-    // 1 operator approved → allowance count = 1
-    expect(allowance).toBe(1n);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(undefined);
+  });
+
+  it('erc721_approve_all_multi', async () => {
+    const result = await simulate(erc721_approve_all_multi.slice(0, 2));
+    const allowance = getAllowances(result, ERC721_ADDRESS);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(100n);
+  });
+
+  it('erc721_approve_all_multi_revoke_one', async () => {
+    const result = await simulate(erc721_approve_all_multi.slice(0, 3));
+    const allowance = getAllowances(result, ERC721_ADDRESS);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(100n);
+  });
+
+  it('erc721_approve_all_multi_revoke_all', async () => {
+    const result = await simulate(erc721_approve_all_multi);
+    const allowance = getAllowances(result, ERC721_ADDRESS);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(undefined);
   });
 });
 
@@ -248,14 +277,14 @@ describe('simulate katana erc1155', () => {
   it('erc1155_approve_all', async () => {
     const result = await simulate(erc1155_approve_all);
     const allowance = getAllowances(result, ERC1155_ADDRESS);
-    // 1 operator approved → allowance count = 1
-    expect(allowance).toBe(1n);
+    // operator approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(100n);
   });
 
   it('erc1155_approve_all_multi', async () => {
     const result = await simulate(erc1155_approve_all_multi);
     const allowance = getAllowances(result, ERC1155_ADDRESS);
-    // 2 operators approved → allowance count = 2
-    expect(allowance).toBe(2n);
+    // multiple operators approved → approvedAll adds 100 tokens
+    expect(allowance).toBe(100n);
   });
 });
