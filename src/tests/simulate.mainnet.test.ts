@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Account, RpcProvider, type Call } from "starknet";
-import { parseSimulationResponses, type SimulationResult } from "../utils/sim-parser.js";
+import { parseSimulationResponses, type SimulationBalance } from "../utils/sim-parser.js";
 import * as transactions from "../constants/transactions.js";
 import * as constants from "../constants/index.js";
 
@@ -23,13 +23,13 @@ const simulate = async (transactions: Call[]) => {
   return await parseSimulationResponses(responses, provider, caller);
 }
 
-const getBalanceDiff = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
+const getBalanceDiff = (result: SimulationBalance[], contractAddress: string): bigint | undefined => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
   if (!c) return undefined;
   return c.balance;
 }
 
-const getAllowances = (result: SimulationResult[], contractAddress: string): bigint | undefined => {
+const getAllowances = (result: SimulationBalance[], contractAddress: string): bigint | undefined => {
   const c = result.find((r) => BigInt(r.contractAddress) === BigInt(contractAddress));
   if (!c) return undefined;
   return c.allowance + (c.approvedAll ? 100n : 0n);

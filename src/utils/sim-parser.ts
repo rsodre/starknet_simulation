@@ -2,7 +2,7 @@ import {
   RpcProvider,
   type SimulateTransactionOverhead,
 } from "starknet";
-import { consolidateSimulationEvents, extractSimulationEvents } from "./sim-events";
+import { consolidateSimulationEvents, parseSimulationEvents } from "./sim-events";
 // import { extractSimulationStorageDiffs } from "./sim-storage-diffs";
 
 export interface SimulationStorageDiff {
@@ -16,8 +16,11 @@ export interface SimulationStorageDiff {
   storageName?: string | undefined;
 }
 
+export type ContractType = 'ERC20' | 'ERC721' | 'ERC1155';
+
 export interface SimulationEvent {
   contractAddress: string;
+  contractType: ContractType | undefined;
   entryPointSelector: string;
   keys: string[];
   data: string[];
@@ -26,8 +29,7 @@ export interface SimulationEvent {
   eventName?: string;
 }
 
-export type ContractType = 'ERC20' | 'ERC721' | 'ERC1155';
-export interface SimulationResult {
+export interface SimulationBalance {
   contractAddress: string;
   contractType: ContractType;
   balance: bigint;
@@ -48,9 +50,9 @@ export const parseSimulationResponses = async (
   }
 
   // const storageDiffs = await extractSimulationStorageDiffs(responses, provider, caller, false);
-  const events = await extractSimulationEvents(responses, provider, caller);
+  const events = await parseSimulationEvents(responses, provider, BigInt(caller));
 
-  const result = await consolidateSimulationEvents(events, provider, caller);
+  const result = consolidateSimulationEvents(events, BigInt(caller));
 
   // console.log(`---------- caller: `, caller);
   // console.log(`---------- storageDiffs: `, storageDiffs);
